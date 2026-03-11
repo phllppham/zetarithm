@@ -35,24 +35,22 @@ export default function Navbar() {
     null;
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-end px-6 py-4">
-      <div className="flex items-center gap-5 text-sm text-white/40">
-        {user ? (
-          <div className="flex items-center gap-3">
-            <span className="text-white/60 text-xs">{displayName}</span>
-            <button
-              onClick={handleSignOut}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        ) : (
-          <Link href="/login" className="text-white/30 text-xs hover:text-white/60 transition-colors">
-            Login
-          </Link>
-        )}
-      </div>
+    <nav className="fixed top-0 left-0 right-0 z-50 flex items-start justify-end px-6 py-4">
+      {user ? (
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-white/60 text-xs">{displayName}</span>
+          <button
+            onClick={handleSignOut}
+            className="text-white/30 text-xs hover:text-white/60 transition-colors"
+          >
+            Sign Out
+          </button>
+        </div>
+      ) : (
+        <Link href="/login" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+          Login
+        </Link>
+      )}
     </nav>
   );
 }
