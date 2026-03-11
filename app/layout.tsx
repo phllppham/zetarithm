@@ -4,8 +4,8 @@ import Navbar from "@/components/Navbar";
 import BackgroundOrbs from "@/components/BackgroundOrbs";
 
 export const metadata: Metadata = {
-  title: "ZetaMath — Mental Arithmetic Speed Game",
-  description: "Test your mental arithmetic speed. How many problems can you solve in 60 seconds?",
+  title: "Zetarithm — Modern Zetamac Arithmetic Game",
+  description: "Modern Zetamac Arithmetic Game",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
       <body className="min-h-screen text-white">
         <BackgroundOrbs />
         <Navbar />
-        <main className="pt-16">{children}</main>
+        <main>{children}</main>
       </body>
     </html>
   );

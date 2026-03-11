@@ -1,14 +1,18 @@
-export type Operator = "+" | "−" | "×";
+export type Operator = "+" | "−" | "×" | "÷";
 
 export interface Question {
   question: string;
   answer: number;
 }
 
-export interface DifficultyConfig {
+export interface OperatorRange {
   min: number;
   max: number;
+}
+
+export interface DifficultyConfig {
   operators: Operator[];
+  ranges: Record<Operator, OperatorRange>;
 }
 
 export interface LeaderboardEntry {

@@ -1,6 +1,6 @@
-# ZetaMath
+# Zetarithm
 
-A fast-paced mental arithmetic speed game inspired by Zetamac. Answer as many arithmetic problems as you can in 60 seconds.
+Modern Zetamac Arithmetic Game. Answer as many arithmetic problems as you can in 60 seconds.
 
 ## Stack
 
@@ -23,8 +23,8 @@ A fast-paced mental arithmetic speed game inspired by Zetamac. Answer as many ar
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-username/zetamath.git
-cd zetamath
+git clone https://github.com/your-username/zetarithm.git
+cd zetarithm
 npm install
 ```
 
