@@ -108,7 +108,7 @@ function GameInner() {
         user.email?.split("@")[0] ||
         "Anonymous";
 
-      await supabase.from("leaderboard").insert({ user_id: user.id, username, score });
+      await supabase.from("leaderboard").insert({ user_id: user.id, username, score, duration: gameDuration });
       setSaving(false);
       setSaved(true);
     };

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
+import ProfilePanel from "@/components/ProfilePanel";
+import LoginModal from "@/components/LoginModal";
 import type { Operator } from "@/types";
 
 const ALL_OPERATORS: { op: Operator; label: string }[] = [
@@ -28,6 +30,8 @@ export default function HomePage() {
   const [showTimer, setShowTimer] = useState(true);
   const [showScore, setShowScore] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const toggleOp = (op: Operator) => {
     setEnabledOps((prev) => {
@@ -44,7 +48,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center px-4 overflow-hidden">
+    <div className="flex h-screen items-center justify-center px-4 gap-4">
 
       {/* About modal overlay */}
       {aboutOpen && (
@@ -94,9 +98,12 @@ export default function HomePage() {
 
             <div>
               <p className="text-white/30 text-xs">
-                <Link href="/login" className="text-white/50 underline hover:text-white/80 transition-colors" onClick={() => setAboutOpen(false)}>
+                <button
+                  onClick={() => { setAboutOpen(false); setLoginOpen(true); }}
+                  className="text-white/50 underline hover:text-white/80 transition-colors"
+                >
                   Login
-                </Link>{" "}
+                </button>{" "}
                 to view your statistics and compete on the leaderboard.
               </p>
             </div>
@@ -105,7 +112,12 @@ export default function HomePage() {
       )}
 
       {/* Main card */}
-        <GlassCard className={`w-full max-w-2xl px-12 pt-9 pb-10 transition-all duration-300 ${aboutOpen ? "opacity-60 pointer-events-none" : ""}`}>
+        <GlassCard
+          className={`w-full max-w-2xl px-12 pt-9 pb-10 ${(aboutOpen || loginOpen) ? "opacity-60 pointer-events-none" : ""}`}
+          style={{
+            transition: "transform 350ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease-out",
+          }}
+        >
 
         {/* Top row: title left, nav links right */}
         <div className="flex items-start justify-between mb-9">
@@ -124,9 +136,12 @@ export default function HomePage() {
             >
               About
             </button>
-            <Link href="/profile" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+            <button
+              onClick={() => setProfileOpen((p) => !p)}
+              className="text-white/30 text-xs hover:text-white/60 transition-colors"
+            >
               Profile
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -197,6 +212,29 @@ export default function HomePage() {
           </Link>
         </div>
       </GlassCard>
+
+      {/* Login modal */}
+      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+
+      {/* Profile panel — slides in from right edge of screen */}
+      <div
+        style={{
+          width: "18rem",
+          flexShrink: 0,
+          marginLeft: profileOpen ? "0" : "calc(-18rem - 1rem)",
+          transform: profileOpen ? "translateX(0)" : "translateX(30vw)",
+          opacity: profileOpen ? 1 : 0,
+          filter: profileOpen ? "blur(0px)" : "blur(4px)",
+          transition: [
+            "margin-left 420ms cubic-bezier(0.4,0,0.2,1)",
+            "transform 420ms cubic-bezier(0.4,0,0.2,1)",
+            "opacity 380ms ease-out",
+            "filter 320ms ease-out",
+          ].join(", "),
+        }}
+      >
+        <ProfilePanel onClose={() => setProfileOpen(false)} onLogin={() => setLoginOpen(true)} />
+      </div>
     </div>
   );
 }
