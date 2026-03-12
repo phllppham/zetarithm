@@ -145,7 +145,7 @@ export default function LeaderboardPage() {
         {/* Footer buttons */}
         <div className="flex items-center gap-3 justify-end pt-2 border-t border-white/8">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/")}
             className="px-4 py-2 rounded-xl border border-white/12 bg-white/6 text-white/60 text-sm font-medium hover:bg-white/10 hover:text-white/80 hover:border-white/20 hover:shadow-[0_0_12px_rgba(255,255,255,0.07)] transition-all duration-200"
           >
             Return

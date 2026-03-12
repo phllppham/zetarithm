@@ -106,7 +106,8 @@ function GameInner() {
       setSaving(true);
       setSaveError(null);
       try {
-        await saveScore(gameDuration, finalScoreRef.current);
+        const activeOps = opsParam ? opsParam.split(",") : ["+", "−", "×", "÷"];
+        await saveScore(gameDuration, finalScoreRef.current, activeOps);
         setSaved(true);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to save score";
