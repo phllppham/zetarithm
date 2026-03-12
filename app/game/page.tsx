@@ -109,7 +109,7 @@ function GameInner() {
         setSaveError("Invalid score");
         return;
       }
-      const maxScore = gameDuration * 10;
+      const maxScore = gameDuration * 5;
       if (score > maxScore) {
         console.log("Invalid score rejected");
         setSaveError("Invalid score");
@@ -201,8 +201,8 @@ function GameInner() {
     : "border-white/10";
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <GlassCard className={`w-full max-w-lg px-8 py-10 transition-colors duration-200 ${flashBorderClass}`}>
+    <div className="flex min-h-screen items-center justify-center px-3 sm:px-4 py-20 sm:py-4">
+      <GlassCard className={`w-full max-w-lg px-4 sm:px-6 md:px-8 py-8 sm:py-10 transition-colors duration-200 ${flashBorderClass}`}>
 
         {/* PLAYING STATE */}
         {gameState === "playing" && currentQuestion && (
@@ -220,14 +220,14 @@ function GameInner() {
                 {showScore && (
                   <div className={showTimer && showScore ? "text-right" : "text-center"}>
                     <div className="text-white/35 text-xs mb-0.5">Score</div>
-                    <div className="text-3xl font-bold text-white tabular-nums">{score}</div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums">{score}</div>
                   </div>
                 )}
               </div>
             )}
 
             {/* Question */}
-            <div className="text-6xl font-bold tracking-tight text-white py-6">
+            <div className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white py-4 sm:py-6 break-all">
               {currentQuestion.question}
             </div>
 
@@ -247,9 +247,9 @@ function GameInner() {
               placeholder="?"
               autoFocus
               className="
-                w-full text-center text-4xl font-bold text-white
+                w-full text-center text-2xl sm:text-3xl md:text-4xl font-bold text-white
                 bg-white/5 border border-white/10 rounded-xl
-                py-4 px-6 outline-none
+                py-3 sm:py-4 px-4 sm:px-6 outline-none
                 focus:border-white/25 focus:bg-white/8
                 placeholder:text-white/15
                 transition-all
@@ -272,11 +272,11 @@ function GameInner() {
             {/* Final score */}
             <div>
               <p className="text-white/40 text-sm mb-1">Final Score</p>
-              <h2 className="text-6xl font-bold text-white">{score}</h2>
+              <h2 className="text-4xl sm:text-6xl font-bold text-white">{score}</h2>
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full">
               <div className="rounded-xl border border-white/8 bg-white/4 py-4">
                 <div className="text-2xl font-bold text-white">{bestStreak}</div>
                 <div className="text-white/35 text-xs mt-1">Best Streak</div>

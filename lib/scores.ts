@@ -21,9 +21,9 @@ export function isAllOps(ops: string[]): boolean {
   return ALL_OPERATORS.every((op) => ops.includes(op));
 }
 
-/** Max valid score = duration * 10. Rejects obviously impossible scores. */
+/** Max valid score = duration * 5. Rejects impossible speeds (~5 correct/sec). */
 function isValidScore(duration: number, score: number): boolean {
-  const maxScore = duration * 10;
+  const maxScore = duration * 5;
   return score >= 0 && score <= maxScore;
 }
 
@@ -144,7 +144,8 @@ export async function getBestScores(): Promise<BestScores> {
 
   const result: BestScores = { 30: null, 60: null, 120: null, 180: null };
   for (const row of data) {
-    if (row.duration in result && row.score >= 0) {
+    const max = row.duration * 5;
+    if (row.duration in result && row.score >= 0 && row.score <= max) {
       result[row.duration as keyof BestScores] = row.score;
     }
   }

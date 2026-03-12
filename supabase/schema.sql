@@ -5,7 +5,7 @@ create table if not exists public.leaderboard (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   username    text not null,
-  score       integer not null check (score >= 0),
+  score       integer not null check (score >= 0 and score <= duration * 10),
   duration    integer not null default 60,
   created_at  timestamptz not null default now()
 );
@@ -26,12 +26,15 @@ create policy "Public read access"
   for select
   using (true);
 
--- Authenticated users can insert their own scores
+-- Authenticated users can insert their own scores (score validated)
 create policy "Authenticated users can insert own scores"
   on public.leaderboard
   for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and score >= 0 and score <= duration * 10
+  );
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Scores table — stores the single best score per user per duration.
@@ -43,7 +46,7 @@ create table if not exists public.scores (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   duration    integer not null,             -- 30 | 60 | 120 | 180
-  score       integer not null check (score >= 0),
+  score       integer not null check (score >= 0 and score <= duration * 10),
   created_at  timestamptz not null default now(),
 
   -- One row per (user, duration) — enforced at DB level
@@ -56,19 +59,21 @@ create index if not exists scores_user_id_idx on public.scores (user_id);
 -- Row Level Security
 alter table public.scores enable row level security;
 
--- Authenticated users can read their own scores
-create policy "Users can read own scores"
+-- Public read (leaderboard)
+create policy "Public read scores"
   on public.scores
   for select
-  to authenticated
-  using (auth.uid() = user_id);
+  using (true);
 
--- Authenticated users can insert their own scores
+-- Authenticated users can insert their own scores (score validated in policy)
 create policy "Users can insert own scores"
   on public.scores
   for insert
   to authenticated
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and score >= 0 and score <= duration * 10
+  );
 
 -- Authenticated users can update their own scores
 create policy "Users can update own scores"
@@ -76,4 +81,7 @@ create policy "Users can update own scores"
   for update
   to authenticated
   using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  with check (
+    auth.uid() = user_id
+    and score >= 0 and score <= duration * 10
+  );

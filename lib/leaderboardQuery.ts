@@ -25,12 +25,14 @@ export async function getTopScores(
 ): Promise<{ rows: LeaderboardRow[]; error: string | null }> {
   const supabase = createClient();
 
+  const maxScore = duration * 5;
   const { data, error } = await supabase
     .from("scores")
     .select("user_id, username, all_ops_score")
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
     .gte("all_ops_score", 0)
+    .lte("all_ops_score", maxScore)
     .order("all_ops_score", { ascending: false })
     .limit(limit);
 
@@ -80,6 +82,7 @@ export async function getUserPlacement(
 ): Promise<UserPlacement | null> {
   const supabase = createClient();
 
+  const maxScore = duration * 5;
   const { data: myRow, error: myError } = await supabase
     .from("scores")
     .select("username, all_ops_score")
@@ -87,6 +90,7 @@ export async function getUserPlacement(
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
     .gte("all_ops_score", 0)
+    .lte("all_ops_score", maxScore)
     .maybeSingle();
 
   if (myError || !myRow || myRow.all_ops_score === null) return null;
@@ -98,6 +102,7 @@ export async function getUserPlacement(
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
     .gte("all_ops_score", 0)
+    .lte("all_ops_score", maxScore)
     .gt("all_ops_score", myRow.all_ops_score);
 
   if (countError) return null;

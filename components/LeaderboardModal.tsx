@@ -55,11 +55,11 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-[520px] max-w-[92vw] max-h-[82vh] flex flex-col rounded-2xl border border-white/10 bg-white/[0.06] shadow-2xl overflow-hidden"
+        className="relative w-[520px] max-w-[95vw] sm:max-w-[92vw] max-h-[85dvh] sm:max-h-[82vh] flex flex-col rounded-2xl border border-white/10 bg-white/[0.06] shadow-2xl overflow-hidden"
         style={{ backdropFilter: "blur(28px)" }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-7 pt-5 sm:pt-6 pb-3 sm:pb-4 flex-shrink-0">
           <div>
             <p className="text-white/30 text-xs mb-0.5">Top 50</p>
             <h2 className="text-white font-bold text-xl">Leaderboard</h2>
@@ -74,7 +74,7 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
         </div>
 
         {/* Duration tabs */}
-        <div className="flex gap-2 px-7 pb-4 flex-shrink-0">
+        <div className="flex gap-1.5 sm:gap-2 px-4 sm:px-7 pb-3 sm:pb-4 flex-shrink-0">
           {DURATIONS.map((d) => (
             <button
               key={d}
@@ -91,16 +91,16 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[2rem_1fr_4rem] gap-2 px-7 pb-2 flex-shrink-0">
+        <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_1fr_4rem] gap-1.5 sm:gap-2 px-4 sm:px-7 pb-2 flex-shrink-0">
           <span className="text-white/25 text-xs">#</span>
           <span className="text-white/25 text-xs">Player</span>
           <span className="text-white/25 text-xs text-right">Score</span>
         </div>
 
-        <div className="h-px bg-white/8 mx-7 mb-3 flex-shrink-0" />
+        <div className="h-px bg-white/8 mx-4 sm:mx-7 mb-3 flex-shrink-0" />
 
         {/* Rows */}
-        <div className="flex-1 overflow-y-auto px-7 pb-2 flex flex-col gap-1 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-7 pb-2 flex flex-col gap-1 min-h-0">
           {loading && <p className="text-white/25 text-xs text-center py-10">Loading…</p>}
           {!loading && error && <p className="text-red-400/60 text-xs text-center py-10">{error}</p>}
           {!loading && !error && entries.length === 0 && (
@@ -115,7 +115,7 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
             return (
               <div
                 key={entry.user_id}
-                className={`grid grid-cols-[2rem_1fr_4rem] gap-2 items-center px-3 py-2.5 rounded-xl border transition-colors ${
+                className={`grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_1fr_4rem] gap-1.5 sm:gap-2 items-center px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl border transition-colors ${
                   isUser        ? "border-blue-400/25 bg-blue-400/8"
                   : rank === 1  ? "border-yellow-300/20 bg-yellow-300/8"
                   : rank === 2  ? "border-white/12 bg-white/[0.05]"
@@ -148,7 +148,7 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
                 <span className="text-white/20 text-[10px]">your best</span>
                 <div className="flex-1 h-px bg-white/8" />
               </div>
-              <div className="grid grid-cols-[2rem_1fr_4rem] gap-2 items-center px-3 py-2.5 rounded-xl border border-blue-400/25 bg-blue-400/8">
+              <div className="grid grid-cols-[2rem_1fr_3.5rem] sm:grid-cols-[2rem_1fr_4rem] gap-1.5 sm:gap-2 items-center px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-blue-400/25 bg-blue-400/8">
                 <div className="text-center">
                   <span className="text-white/35 text-xs tabular-nums">#{userRow.rank}</span>
                 </div>
@@ -160,7 +160,7 @@ export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-7 py-5 border-t border-white/8 flex-shrink-0">
+        <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 px-4 sm:px-7 py-4 sm:py-5 border-t border-white/8 flex-shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-white/12 bg-white/6 text-white/60 text-sm font-medium hover:bg-white/10 hover:text-white/80 hover:border-white/20 hover:shadow-[0_0_12px_rgba(255,255,255,0.07)] transition-all duration-200"

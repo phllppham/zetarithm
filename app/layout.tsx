@@ -4,6 +4,12 @@ import Navbar from "@/components/Navbar";
 import BackgroundOrbs from "@/components/BackgroundOrbs";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export const metadata: Metadata = {
   title: "Zetarithm — Modern Zetamac Arithmetic Game",
   description: "Modern Zetamac Arithmetic Game",

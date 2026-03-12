@@ -48,8 +48,8 @@ export default function LeaderboardPage() {
   useEffect(() => { fetchScores(selectedDuration); }, [selectedDuration, fetchScores]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
-      <GlassCard className="w-full max-w-xl px-8 py-8 flex flex-col gap-5">
+    <main className="min-h-screen flex flex-col items-center justify-center px-3 sm:px-4 py-20 sm:py-10">
+      <GlassCard className="w-full max-w-xl px-4 sm:px-6 md:px-8 py-6 sm:py-8 flex flex-col gap-5">
         {/* Header */}
         <div>
           <p className="text-white/30 text-xs mb-0.5">Top 50</p>

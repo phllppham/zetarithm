@@ -133,14 +133,14 @@ export default function LoginModal({ onClose }: LoginModalProps) {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
 
       {/* Modal */}
-      <GlassCard className="relative w-full max-w-md px-8 py-9 z-10">
+      <GlassCard className="relative w-full max-w-md px-5 sm:px-8 py-7 sm:py-9 z-10 my-auto">
         {/* X close */}
         <button
           onClick={onClose}
