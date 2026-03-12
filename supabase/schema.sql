@@ -5,7 +5,7 @@ create table if not exists public.leaderboard (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   username    text not null,
-  score       integer not null,
+  score       integer not null check (score >= 0),
   duration    integer not null default 60,
   created_at  timestamptz not null default now()
 );
@@ -43,7 +43,7 @@ create table if not exists public.scores (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references auth.users(id) on delete cascade,
   duration    integer not null,             -- 30 | 60 | 120 | 180
-  score       integer not null,
+  score       integer not null check (score >= 0),
   created_at  timestamptz not null default now(),
 
   -- One row per (user, duration) — enforced at DB level

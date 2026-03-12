@@ -103,11 +103,24 @@ function GameInner() {
     if (saved || saving || !user) return;
 
     const persist = async () => {
+      const score = finalScoreRef.current;
+      if (score < 0) {
+        console.log("Invalid score rejected");
+        setSaveError("Invalid score");
+        return;
+      }
+      const maxScore = gameDuration * 10;
+      if (score > maxScore) {
+        console.log("Invalid score rejected");
+        setSaveError("Invalid score");
+        return;
+      }
+
       setSaving(true);
       setSaveError(null);
       try {
         const activeOps = opsParam ? opsParam.split(",") : ["+", "−", "×", "÷"];
-        await saveScore(gameDuration, finalScoreRef.current, activeOps);
+        await saveScore(gameDuration, score, activeOps);
         setSaved(true);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Failed to save score";

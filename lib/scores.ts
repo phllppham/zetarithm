@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabaseClient";
 import type { BestScores } from "@/types";
 
 const ALL_OPERATORS = ["+", "−", "×", "÷"] as const;
+const RATE_LIMIT_MS = 2000;
+
+let lastSaveTime = 0;
 
 function deriveUsername(user: { user_metadata?: Record<string, string>; email?: string }): string {
   return (
@@ -18,12 +21,19 @@ export function isAllOps(ops: string[]): boolean {
   return ALL_OPERATORS.every((op) => ops.includes(op));
 }
 
+/** Max valid score = duration * 10. Rejects obviously impossible scores. */
+function isValidScore(duration: number, score: number): boolean {
+  const maxScore = duration * 10;
+  return score >= 0 && score <= maxScore;
+}
+
 /**
  * Persist a game result.
  *
- * - `scores.score`         → best score ever for this (user, duration), any ops
- * - `scores.all_ops_score` → best score achieved with all 4 ops enabled (leaderboard-eligible)
- * - `leaderboard`          → full game history entry (non-fatal)
+ * - Requires authenticated user (session.user.id)
+ * - Validates score <= duration * 10
+ * - Rate limit: no save within 2 seconds of previous save
+ * - Only stores best score per (user, duration)
  */
 export async function saveScore(
   duration: number,
@@ -32,8 +42,22 @@ export async function saveScore(
 ): Promise<void> {
   const supabase = createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error("Not authenticated");
+  const { data: { session }, error: authError } = await supabase.auth.getSession();
+  if (authError || !session?.user) throw new Error("Not authenticated");
+
+  const user = session.user;
+  const userId = user.id;
+
+  if (!isValidScore(duration, score)) {
+    console.log("Invalid score rejected");
+    throw new Error("Invalid score");
+  }
+
+  const now = Date.now();
+  if (now - lastSaveTime < RATE_LIMIT_MS) {
+    console.log("Invalid score rejected");
+    throw new Error("Please wait before saving again");
+  }
 
   const username = deriveUsername(user);
   const allOps = isAllOps(ops);
@@ -42,7 +66,7 @@ export async function saveScore(
   const { data: existing, error: fetchError } = await supabase
     .from("scores")
     .select("score, all_ops_score")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("duration", duration)
     .maybeSingle();
 
@@ -56,8 +80,10 @@ export async function saveScore(
 
   // Only write if something actually improved
   if (newOverallBest || newAllOpsBest) {
+    lastSaveTime = Date.now();
+
     const upsertData: Record<string, unknown> = {
-      user_id: user.id,
+      user_id: userId,
       duration,
       username,
       created_at: new Date().toISOString(),
@@ -80,18 +106,21 @@ export async function saveScore(
     const { error: nameError } = await supabase
       .from("scores")
       .update({ username })
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("duration", duration);
     if (nameError) console.warn("Username update failed:", nameError.message);
   }
 
   // ── Leaderboard history (non-fatal) ───────────────────────────────────────
-  const { error: leaderboardError } = await supabase
-    .from("leaderboard")
-    .insert({ user_id: user.id, username, score, duration });
+  // Only append if score is valid (defense in depth)
+  if (score >= 0) {
+    const { error: leaderboardError } = await supabase
+      .from("leaderboard")
+      .insert({ user_id: userId, username, score, duration });
 
-  if (leaderboardError) {
-    console.warn("Leaderboard history insert failed:", leaderboardError.message);
+    if (leaderboardError) {
+      console.warn("Leaderboard history insert failed:", leaderboardError.message);
+    }
   }
 }
 
@@ -115,7 +144,7 @@ export async function getBestScores(): Promise<BestScores> {
 
   const result: BestScores = { 30: null, 60: null, 120: null, 180: null };
   for (const row of data) {
-    if (row.duration in result) {
+    if (row.duration in result && row.score >= 0) {
       result[row.duration as keyof BestScores] = row.score;
     }
   }

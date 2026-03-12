@@ -30,6 +30,7 @@ export async function getTopScores(
     .select("user_id, username, all_ops_score")
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
+    .gte("all_ops_score", 0)
     .order("all_ops_score", { ascending: false })
     .limit(limit);
 
@@ -85,6 +86,7 @@ export async function getUserPlacement(
     .eq("user_id", userId)
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
+    .gte("all_ops_score", 0)
     .maybeSingle();
 
   if (myError || !myRow || myRow.all_ops_score === null) return null;
@@ -95,6 +97,7 @@ export async function getUserPlacement(
     .select("*", { count: "exact", head: true })
     .eq("duration", duration)
     .not("all_ops_score", "is", null)
+    .gte("all_ops_score", 0)
     .gt("all_ops_score", myRow.all_ops_score);
 
   if (countError) return null;
