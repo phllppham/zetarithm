@@ -1,46 +1,91 @@
 # Zetarithm
 
-Modern Zetamac Arithmetic Game. Answer as many arithmetic problems as you can in 60 seconds.
+A modern **real-time arithmetic speed game** inspired by Zetamac.  
+Players answer as many math problems as possible within **60 seconds**, with scores saved to a global leaderboard.
+
+Built as a **full-stack web app** with authentication, persistent user profiles, and a Supabase-powered leaderboard.
+
+---
 
 ## Stack
 
-- **Frontend**: Next.js 15 (App Router), React, TypeScript, Tailwind CSS
-- **Backend / Database**: Supabase (PostgreSQL + Auth)
-- **Hosting**: Vercel
+- **Frontend:** Next.js 15 (App Router), React, TypeScript, Tailwind CSS  
+- **Backend / Database:** Supabase (PostgreSQL + Auth)  
+- **Hosting:** Vercel  
+
+---
 
 ## Features
 
-- Random arithmetic problems: addition, subtraction, multiplication
-- 60-second countdown timer with animated ring
+- Random arithmetic problems (addition, subtraction, multiplication)
+- 60-second real-time gameplay with animated countdown timer
 - Score and streak tracking
-- Leaderboard (top 50 scores, sorted by score)
-- Authentication: GitHub, Google, Email/Password via Supabase Auth
-- Scores saved to Supabase only when logged in
-- Glassmorphism UI with dark background
+- Global leaderboard showing **top 50 scores**
+- Authentication via **GitHub, Google, or Email/Password**
+- Scores saved to **Supabase PostgreSQL database**
+- Persistent user profiles linked to Supabase Auth
+- Glassmorphism UI with animated background
+
+---
+
+## Demo
+
+Play the deployed version:
+
+```
+https://www.zetarithm.com/
+```
+
+---
 
 ## Getting Started
 
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-username/zetarithm.git
+git clone https://github.com/phllppham/zetarithm
 cd zetarithm
 npm install
 ```
 
-### 2. Set up Supabase
+---
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Go to **SQL Editor** and run the contents of `supabase/schema.sql`
+## 2. Set up Supabase
+
+1. Create a project at  
+https://supabase.com
+
+2. Open **SQL Editor** and run:
+
+```
+supabase/schema.sql
+```
+
 3. In **Authentication → Providers**, enable:
-   - **Email** (enabled by default)
-   - **GitHub** — create an OAuth App at [github.com/settings/developers](https://github.com/settings/developers)
-   - **Google** — create credentials at [console.cloud.google.com](https://console.cloud.google.com)
-4. Add your Supabase redirect URL to each OAuth provider:
-   - Local: `http://localhost:3000/auth/callback`
-   - Production: `https://your-domain.vercel.app/auth/callback`
 
-### 3. Configure environment variables
+- Email (enabled by default)
+- GitHub OAuth
+- Google OAuth
+
+4. Add redirect URLs:
+
+Local:
+
+```
+http://localhost:3000/auth/callback
+```
+
+Production:
+
+```
+https://your-domain.vercel.app/auth/callback
+```
+
+---
+
+## 3. Configure environment variables
+
+Copy the example file:
 
 ```bash
 cp .env.local.example .env.local
@@ -53,50 +98,60 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Find these values in your Supabase dashboard under **Project Settings → API**.
+These values are found in:
 
-### 4. Run locally
+```
+Supabase → Project Settings → API
+```
+
+---
+
+## 4. Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open:
+
+```
+http://localhost:3000
+```
+
+---
 
 ## Project Structure
 
 ```
 /app
-  /game              Game page (game engine)
-  /leaderboard       Leaderboard page (server component)
-  /login             Auth page (email + OAuth)
+  /game              Game engine and gameplay logic
+  /leaderboard       Server-rendered leaderboard page
+  /login             Authentication page
   /auth/callback     OAuth redirect handler
   layout.tsx
-  page.tsx           Home page
+  page.tsx           Landing page
+
 /components
   BackgroundOrbs.tsx Animated background
-  GlassCard.tsx      Glassmorphism card container
-  Navbar.tsx         Navigation bar with auth state
+  GlassCard.tsx      Glass UI container
+  Navbar.tsx         Navigation + auth state
   TimerRing.tsx      Circular countdown timer
+
 /lib
   supabaseClient.ts  Browser Supabase client
   supabaseServer.ts  Server Supabase client
+
 /utils
-  generateQuestion.ts Question generator
+  generateQuestion.ts Arithmetic question generator
+
 /types
   index.ts           Shared TypeScript types
+
 /supabase
   schema.sql         Database schema
 ```
 
-## Deploying to Vercel
-
-1. Push to GitHub
-2. Import the repo in [vercel.com](https://vercel.com)
-3. Add environment variables in the Vercel dashboard:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-4. Deploy
+---
 
 ## Database Schema
 
@@ -110,6 +165,38 @@ create table public.leaderboard (
 );
 ```
 
-Row Level Security is enabled:
-- Anyone can **read** scores
-- Only authenticated users can **insert** their own scores
+Row Level Security (RLS):
+
+- Anyone can **read leaderboard scores**
+- Only **authenticated users** can insert scores
+- Users can only insert scores associated with their own account
+
+---
+
+## Deployment
+
+1. Push repository to GitHub
+2. Import the project in:
+
+```
+https://vercel.com
+```
+
+3. Add environment variables:
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+4. Deploy.
+
+---
+
+## Future Improvements
+
+- Weekly leaderboard resets
+- Difficulty scaling
+- Player statistics dashboard
+- Multiplayer race mode
+- Mobile UI optimizations
