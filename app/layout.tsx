@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import BackgroundOrbs from "@/components/BackgroundOrbs";
+import { AuthModalProvider } from "@/contexts/AuthModalContext";
 
 export const metadata: Metadata = {
   title: "Zetarithm — Modern Zetamac Arithmetic Game",
@@ -16,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen text-white">
-        <BackgroundOrbs />
-        <Navbar />
-        <main>{children}</main>
+        <AuthModalProvider>
+          <BackgroundOrbs />
+          <Navbar />
+          <main>{children}</main>
+        </AuthModalProvider>
       </body>
     </html>
   );

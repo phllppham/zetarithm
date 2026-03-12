@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
 import ProfilePanel from "@/components/ProfilePanel";
-import LoginModal from "@/components/LoginModal";
+import { useAuthModal } from "@/contexts/AuthModalContext";
 import type { Operator } from "@/types";
 
 const ALL_OPERATORS: { op: Operator; label: string }[] = [
@@ -31,7 +31,7 @@ export default function HomePage() {
   const [showScore, setShowScore] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
+  const { openLogin } = useAuthModal();
 
   const toggleOp = (op: Operator) => {
     setEnabledOps((prev) => {
@@ -99,7 +99,7 @@ export default function HomePage() {
             <div>
               <p className="text-white/30 text-xs">
                 <button
-                  onClick={() => { setAboutOpen(false); setLoginOpen(true); }}
+                  onClick={() => { setAboutOpen(false); openLogin(); }}
                   className="text-white/50 underline hover:text-white/80 transition-colors"
                 >
                   Login
@@ -113,7 +113,7 @@ export default function HomePage() {
 
       {/* Main card */}
         <GlassCard
-          className={`w-full max-w-2xl px-12 pt-9 pb-10 ${(aboutOpen || loginOpen) ? "opacity-60 pointer-events-none" : ""}`}
+          className={`w-full max-w-2xl px-12 pt-9 pb-10 ${aboutOpen ? "opacity-60 pointer-events-none" : ""}`}
           style={{
             transition: "transform 350ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease-out",
           }}
@@ -213,9 +213,6 @@ export default function HomePage() {
         </div>
       </GlassCard>
 
-      {/* Login modal */}
-      {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
-
       {/* Profile panel — slides in from right edge of screen */}
       <div
         style={{
@@ -233,7 +230,7 @@ export default function HomePage() {
           ].join(", "),
         }}
       >
-        <ProfilePanel onClose={() => setProfileOpen(false)} onLogin={() => setLoginOpen(true)} />
+        <ProfilePanel onClose={() => setProfileOpen(false)} onLogin={openLogin} />
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { useAuthModal } from "@/contexts/AuthModalContext";
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
+  const { openLogin } = useAuthModal();
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ createClient }) => {
@@ -47,9 +48,12 @@ export default function Navbar() {
           </button>
         </div>
       ) : (
-        <Link href="/login" className="text-white/30 text-xs hover:text-white/60 transition-colors">
+        <button
+          onClick={openLogin}
+          className="text-white/30 text-xs hover:text-white/60 transition-colors"
+        >
           Login
-        </Link>
+        </button>
       )}
     </nav>
   );
