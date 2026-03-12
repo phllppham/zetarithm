@@ -6,8 +6,8 @@ import { Suspense } from "react";
 import GlassCard from "@/components/GlassCard";
 import TimerRing from "@/components/TimerRing";
 import { generateQuestion, DEFAULT_CONFIG } from "@/utils/generateQuestion";
-import { getDisplayName } from "@/lib/auth";
 import { useAuthModal } from "@/contexts/AuthModalContext";
+import { saveScore } from "@/lib/scores";
 import type { DifficultyConfig, Operator, Question } from "@/types";
 
 type GameState = "idle" | "playing" | "finished";
@@ -17,7 +17,7 @@ function GameInner() {
   const searchParams = useSearchParams();
   const { user, openLogin } = useAuthModal();
 
-  const gameDuration = Number(searchParams.get("time") ?? 60);
+  const gameDuration = Number(searchParams.get("time") ?? 120);
   const opsParam = searchParams.get("ops");
   const showTimer = searchParams.get("showTimer") !== "false";
   const showScore = searchParams.get("showScore") !== "false";
@@ -36,7 +36,10 @@ function GameInner() {
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [gameKey, setGameKey] = useState(0);
+  // Capture the final score in a ref so the save effect always reads the right value
+  const finalScoreRef = useRef(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -56,6 +59,9 @@ function GameInner() {
 
   const endGame = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
+    // Snapshot the score into a ref before the state transition so the
+    // save effect always reads the correct final value
+    setScore((s) => { finalScoreRef.current = s; return s; });
     setGameState("finished");
   }, []);
 
@@ -69,6 +75,8 @@ function GameInner() {
     setTimeLeft(gameDuration);
     setSaved(false);
     setSaving(false);
+    setSaveError(null);
+    finalScoreRef.current = 0;
     setGameState("playing");
     nextQuestion();
 
@@ -83,41 +91,36 @@ function GameInner() {
     }, 1000);
   }, [gameDuration, nextQuestion, endGame]);
 
-  // Save score when game ends and capture it as previousScore for next round
+  // Capture previousScore the moment the game ends (runs once per game)
   useEffect(() => {
     if (gameState !== "finished") return;
-    setPreviousScore(score);
+    setPreviousScore(finalScoreRef.current);
+  }, [gameState]);
 
-    // Only authenticated users may save scores
+  // Save score — also depends on `user` so it retries if auth resolves after game ends
+  useEffect(() => {
+    if (gameState !== "finished") return;
     if (saved || saving || !user) return;
 
-    const saveScore = async () => {
+    const persist = async () => {
       setSaving(true);
+      setSaveError(null);
       try {
-        const { createClient } = await import("@/lib/supabaseClient");
-        const supabase = createClient();
-
-        // Re-verify the session before writing — prevents spoofed submits
-        const { data: { user: verifiedUser }, error: authError } = await supabase.auth.getUser();
-        if (authError || !verifiedUser) {
-          setSaving(false);
-          return;
-        }
-
-        const username = getDisplayName(verifiedUser);
-        await supabase
-          .from("leaderboard")
-          .insert({ user_id: verifiedUser.id, username, score, duration: gameDuration });
-
+        await saveScore(gameDuration, finalScoreRef.current);
         setSaved(true);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to save score";
+        setSaveError(msg);
+        console.error("Save score error:", err);
       } finally {
         setSaving(false);
       }
     };
 
-    saveScore();
+    persist();
+  // user is intentionally included — retries if auth resolves after game ends
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState]);
+  }, [gameState, user]);
 
   const handleInput = (value: string) => {
     setInputValue(value);
@@ -300,9 +303,12 @@ function GameInner() {
                   </button>{" "}to save your score
                 </p>
               )}
-              {user && saving && <p className="text-white/40">Saving score...</p>}
-              {user && saved && (
+              {user && saving && <p className="text-white/40">Saving score…</p>}
+              {user && saved && !saveError && (
                 <a href="/leaderboard" className="text-white/25 hover:text-white/50 transition-colors">leaderboard</a>
+              )}
+              {user && saveError && (
+                <p className="text-red-400/60">{saveError}</p>
               )}
             </div>
           </div>

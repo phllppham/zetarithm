@@ -5,12 +5,10 @@ import type { User } from "@supabase/supabase-js";
 import GlassCard from "@/components/GlassCard";
 import { getDisplayName } from "@/lib/auth";
 import { useAuthModal } from "@/contexts/AuthModalContext";
+import { getBestScores } from "@/lib/scores";
+import type { BestScores } from "@/types";
 
-const DURATIONS = [30, 60, 120, 180];
-
-interface BestScores {
-  [duration: number]: number | null;
-}
+const DURATIONS = [30, 60, 120, 180] as const;
 
 interface ProfilePanelProps {
   onClose: () => void;
@@ -22,7 +20,7 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
   const handleLogin = onLogin ?? openLogin;
   // Keep a local copy so we can optimistically update the display name after editing
   const [user, setUser] = useState<User | null>(contextUser);
-  const [bestScores, setBestScores] = useState<BestScores>({});
+  const [bestScores, setBestScores] = useState<BestScores>({ 30: null, 60: null, 120: null, 180: null });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -37,29 +35,13 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
 
   // Fetch best scores whenever the resolved user changes
   useEffect(() => {
-    setLoading(true);
     if (!user) { setLoading(false); return; }
+    setLoading(true);
 
-    import("@/lib/supabaseClient").then(async ({ createClient }) => {
-      const supabase = createClient();
-
-      // Verify session before reading user-specific data
-      const { data: { user: verifiedUser } } = await supabase.auth.getUser();
-      if (!verifiedUser) { setLoading(false); return; }
-
-      const { data } = await supabase
-        .from("leaderboard")
-        .select("score, duration")
-        .eq("user_id", verifiedUser.id);
-
-      const scores: BestScores = {};
-      DURATIONS.forEach((d) => {
-        const entries = (data ?? []).filter((r) => r.duration === d);
-        scores[d] = entries.length > 0 ? Math.max(...entries.map((r) => r.score)) : null;
-      });
-      setBestScores(scores);
-      setLoading(false);
-    });
+    getBestScores()
+      .then(setBestScores)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [user?.id]);  // re-fetch only when the user identity changes
 
   const displayName = user ? getDisplayName(user) : "";

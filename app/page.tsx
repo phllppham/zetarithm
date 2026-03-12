@@ -26,7 +26,7 @@ export default function HomePage() {
   const [enabledOps, setEnabledOps] = useState<Set<Operator>>(
     new Set(ALL_OPERATORS.map((o) => o.op))
   );
-  const [selectedTime, setSelectedTime] = useState(60);
+  const [selectedTime, setSelectedTime] = useState(120);
   const [showTimer, setShowTimer] = useState(true);
   const [showScore, setShowScore] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);

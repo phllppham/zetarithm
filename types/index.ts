@@ -22,3 +22,11 @@ export interface LeaderboardEntry {
   score: number;
   created_at: string;
 }
+
+/** Best score per standard duration. null = no score recorded yet. */
+export interface BestScores {
+  30: number | null;
+  60: number | null;
+  120: number | null;
+  180: number | null;
+}
