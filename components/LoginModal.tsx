@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GlassCard from "@/components/GlassCard";
 
-type AuthMode = "signin" | "signup";
+type Step = "email" | "verify";
 
 async function getSupabase() {
   const { createClient } = await import("@/lib/supabaseClient");
@@ -15,41 +15,112 @@ interface LoginModalProps {
 }
 
 export default function LoginModal({ onClose }: LoginModalProps) {
-  const [mode, setMode] = useState<AuthMode>("signin");
+  // ── OTP state machine ────────────────────────────────────────────────────
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Resend cooldown: counts down from 60 after the OTP email is sent
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Clean up cooldown timer on unmount
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+
+  // ── Step 1: send OTP ─────────────────────────────────────────────────────
+  const sendOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!email.trim()) return;
+
     setError(null);
-    setMessage(null);
     setLoading(true);
 
     const supabase = await getSupabase();
-
-    if (mode === "signin") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setError(error.message);
-      } else {
-        onClose();
-        window.location.reload();
-      }
-    } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        setError(error.message);
-      } else {
-        setMessage("Check your email for a confirmation link.");
-      }
-    }
+    const { error: otpError } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        // Create the account if it doesn't exist yet (new users sign up this way)
+        shouldCreateUser: true,
+        // No redirect URL — we verify the 6-digit code manually in-app
+        emailRedirectTo: undefined,
+      },
+    });
 
     setLoading(false);
+
+    if (otpError) {
+      const msg = otpError.message.toLowerCase();
+      if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("over_email_send_rate_limit")) {
+        setError("Too many code requests. Please wait a few minutes before trying again.");
+      } else {
+        setError(otpError.message);
+      }
+      return;
+    }
+
+    // Advance to verification step and start 90-second resend cooldown
+    setStep("verify");
+    setCode("");
+    startCooldown();
   };
 
+  const startCooldown = () => {
+    setResendCooldown(90);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((n) => {
+        if (n <= 1) { clearInterval(cooldownRef.current!); return 0; }
+        return n - 1;
+      });
+    }, 1000);
+  };
+
+  // ── Step 2: verify code ──────────────────────────────────────────────────
+  const verifyCode = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const trimmedCode = code.trim();
+    if (!trimmedCode) return;
+
+    setError(null);
+    setLoading(true);
+
+    const supabase = await getSupabase();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: trimmedCode,
+      type: "email",
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      // Surface friendly messages for the most common failures
+      if (verifyError.message.toLowerCase().includes("expired")) {
+        setError("Code expired. Request a new one below.");
+      } else if (
+        verifyError.message.toLowerCase().includes("invalid") ||
+        verifyError.message.toLowerCase().includes("otp")
+      ) {
+        setError("Incorrect code. Double-check and try again.");
+      } else {
+        setError(verifyError.message);
+      }
+      return;
+    }
+
+    // Success — onAuthStateChange in AuthModalProvider picks up the new session.
+    onClose();
+  };
+
+  // Accept up to 8 digits (Supabase can send 6 or 8 depending on project config)
+  const handleCodeChange = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8);
+    setCode(digits);
+    setError(null);
+  };
+
+  // ── OAuth ────────────────────────────────────────────────────────────────
   const handleOAuth = async (provider: "github" | "google" | "linkedin_oidc") => {
     setError(null);
     const supabase = await getSupabase();
@@ -59,6 +130,7 @@ export default function LoginModal({ onClose }: LoginModalProps) {
     });
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
@@ -78,92 +150,135 @@ export default function LoginModal({ onClose }: LoginModalProps) {
           ✕
         </button>
 
-        <h2 className="text-xl font-bold text-white mb-1">
-          {mode === "signin" ? "Welcome back" : "Create account"}
-        </h2>
-        <p className="text-white/40 text-sm mb-7">
-          {mode === "signin"
-            ? "Sign in to save your scores and climb the leaderboard."
-            : "Sign up to track your progress and compete globally."}
-        </p>
+        {step === "email" ? (
+          <>
+            <h2 className="text-xl font-bold text-white mb-1">Sign in</h2>
+            <p className="text-white/40 text-sm mb-7">
+              Save your scores and climb the leaderboard.
+            </p>
 
-        {/* OAuth */}
-        <div className="flex flex-col gap-3 mb-5">
-          <button
-            onClick={() => handleOAuth("github")}
-            className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
-          >
-            <GitHubIcon />
-            Continue with GitHub
-          </button>
-          <button
-            onClick={() => handleOAuth("google")}
-            className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-          <button
-            onClick={() => handleOAuth("linkedin_oidc")}
-            className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
-          >
-            <LinkedInIcon />
-            Continue with LinkedIn
-          </button>
-        </div>
+            {/* OAuth buttons */}
+            <div className="flex flex-col gap-3 mb-5">
+              <button
+                onClick={() => handleOAuth("github")}
+                className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
+              >
+                <GitHubIcon />
+                Continue with GitHub
+              </button>
+              <button
+                onClick={() => handleOAuth("google")}
+                className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
+              >
+                <GoogleIcon />
+                Continue with Google
+              </button>
+              <button
+                onClick={() => handleOAuth("linkedin_oidc")}
+                className="flex items-center justify-center gap-3 w-full py-2.5 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-all font-medium text-sm"
+              >
+                <LinkedInIcon />
+                Continue with LinkedIn
+              </button>
+            </div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex-1 h-px bg-white/8" />
-          <span className="text-white/25 text-xs">or</span>
-          <div className="flex-1 h-px bg-white/8" />
-        </div>
+            {/* Divider */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex-1 h-px bg-white/8" />
+              <span className="text-white/25 text-xs">or continue with email</span>
+              <div className="flex-1 h-px bg-white/8" />
+            </div>
 
-        {/* Email form */}
-        <form onSubmit={handleEmailAuth} className="flex flex-col gap-3">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/25 outline-none focus:border-white/25 focus:bg-white/8 transition-all"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/25 outline-none focus:border-white/25 focus:bg-white/8 transition-all"
-          />
+            {/* Email form */}
+            <form onSubmit={sendOtp} className="flex flex-col gap-3">
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                required
+                autoFocus
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-white/25 outline-none focus:border-white/25 focus:bg-white/8 transition-all"
+              />
 
-          {error && <p className="text-red-400/80 text-xs px-1">{error}</p>}
-          {message && <p className="text-emerald-400/80 text-xs px-1">{message}</p>}
+              {error && <p className="text-red-400/80 text-xs px-1">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-          >
-            {loading ? "Loading..." : mode === "signin" ? "Sign In" : "Create Account"}
-          </button>
-        </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+              >
+                {loading ? "Sending…" : "Send Code"}
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            {/* Back arrow */}
+            <button
+              onClick={() => { setStep("email"); setError(null); setCode(""); }}
+              className="absolute top-4 left-4 text-white/30 hover:text-white/70 transition-colors text-sm flex items-center gap-1"
+              aria-label="Back"
+            >
+              ← Back
+            </button>
 
-        <p className="text-center text-white/35 text-xs mt-5">
-          {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-          <button
-            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); setMessage(null); }}
-            className="text-white/60 underline hover:text-white transition-colors"
-          >
-            {mode === "signin" ? "Sign up" : "Sign in"}
-          </button>
-        </p>
+            <h2 className="text-xl font-bold text-white mb-1 mt-4">Check your email</h2>
+            <p className="text-white/40 text-sm mb-7">
+              We sent a verification code to{" "}
+              <span className="text-white/70 font-medium">{email}</span>.
+              Enter it below to sign in.
+            </p>
+
+            <form onSubmit={verifyCode} className="flex flex-col gap-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Enter code"
+                value={code}
+                onChange={(e) => handleCodeChange(e.target.value)}
+                maxLength={8}
+                autoFocus
+                autoComplete="one-time-code"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-2xl font-bold text-center tracking-[0.4em] placeholder:text-white/15 placeholder:tracking-[0.05em] outline-none focus:border-white/25 focus:bg-white/8 transition-all"
+              />
+
+              {error && <p className="text-red-400/80 text-xs px-1">{error}</p>}
+
+              <button
+                type="submit"
+                disabled={loading || code.length < 4}
+                className="w-full py-3 rounded-xl bg-white text-black font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+              >
+                {loading ? "Verifying…" : "Verify Code"}
+              </button>
+            </form>
+
+            {/* Resend */}
+            <p className="text-center text-white/35 text-xs mt-5">
+              Didn&apos;t receive it?{" "}
+              {resendCooldown > 0 ? (
+                <span className="text-white/25">Resend in {resendCooldown}s</span>
+              ) : (
+                <button
+                  onClick={() => sendOtp()}
+                  className="text-white/60 underline hover:text-white transition-colors"
+                >
+                  Resend code
+                </button>
+              )}
+            </p>
+            <p className="text-center text-white/20 text-xs mt-2">
+              Check your spam folder if it doesn&apos;t arrive.
+            </p>
+          </>
+        )}
       </GlassCard>
     </div>
   );
 }
+
+// ── Icons ──────────────────────────────────────────────────────────────────
 
 function GitHubIcon() {
   return (

@@ -123,7 +123,7 @@ export default function HomePage() {
         <div className="flex items-start justify-between mb-9">
           <div>
             <h1 className="text-5xl font-bold tracking-tight text-white leading-tight">
-              Zetarithm
+              ZetaRithm
             </h1>
             <p className="text-white/35 text-xs mt-1.5">
               Modern Zetamac Arithmetic Game

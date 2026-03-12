@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import GlassCard from "@/components/GlassCard";
+import { getDisplayName } from "@/lib/auth";
+import { useAuthModal } from "@/contexts/AuthModalContext";
 
 const DURATIONS = [30, 60, 120, 180];
 
@@ -16,7 +18,10 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const { user: contextUser, openLogin } = useAuthModal();
+  const handleLogin = onLogin ?? openLogin;
+  // Keep a local copy so we can optimistically update the display name after editing
+  const [user, setUser] = useState<User | null>(contextUser);
   const [bestScores, setBestScores] = useState<BestScores>({});
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -25,36 +30,39 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync with context user changes (login / logout while panel is open)
   useEffect(() => {
+    setUser(contextUser);
+  }, [contextUser]);
+
+  // Fetch best scores whenever the resolved user changes
+  useEffect(() => {
+    setLoading(true);
+    if (!user) { setLoading(false); return; }
+
     import("@/lib/supabaseClient").then(async ({ createClient }) => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
 
-      if (user) {
-        const { data } = await supabase
-          .from("leaderboard")
-          .select("score, duration")
-          .eq("user_id", user.id);
+      // Verify session before reading user-specific data
+      const { data: { user: verifiedUser } } = await supabase.auth.getUser();
+      if (!verifiedUser) { setLoading(false); return; }
 
-        const scores: BestScores = {};
-        DURATIONS.forEach((d) => {
-          const entries = (data ?? []).filter((r) => r.duration === d);
-          scores[d] = entries.length > 0 ? Math.max(...entries.map((r) => r.score)) : null;
-        });
-        setBestScores(scores);
-      }
+      const { data } = await supabase
+        .from("leaderboard")
+        .select("score, duration")
+        .eq("user_id", verifiedUser.id);
 
+      const scores: BestScores = {};
+      DURATIONS.forEach((d) => {
+        const entries = (data ?? []).filter((r) => r.duration === d);
+        scores[d] = entries.length > 0 ? Math.max(...entries.map((r) => r.score)) : null;
+      });
+      setBestScores(scores);
       setLoading(false);
     });
-  }, []);
+  }, [user?.id]);  // re-fetch only when the user identity changes
 
-  const displayName =
-    user?.user_metadata?.display_name ||
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.user_name ||
-    user?.email?.split("@")[0] ||
-    "";
+  const displayName = user ? getDisplayName(user) : "";
 
   const startEditing = () => {
     setNameInput(displayName);
@@ -201,7 +209,7 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
             Sign in to track your best scores across all durations.
           </p>
           <button
-            onClick={onLogin}
+            onClick={handleLogin}
             className="px-5 py-2.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 transition-all"
           >
             Login

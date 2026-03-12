@@ -6,16 +6,16 @@ import { Suspense } from "react";
 import GlassCard from "@/components/GlassCard";
 import TimerRing from "@/components/TimerRing";
 import { generateQuestion, DEFAULT_CONFIG } from "@/utils/generateQuestion";
+import { getDisplayName } from "@/lib/auth";
+import { useAuthModal } from "@/contexts/AuthModalContext";
 import type { DifficultyConfig, Operator, Question } from "@/types";
-import type { User } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 type GameState = "idle" | "playing" | "finished";
 
 function GameInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabaseRef = useRef<SupabaseClient | null>(null);
+  const { user, openLogin } = useAuthModal();
 
   const gameDuration = Number(searchParams.get("time") ?? 60);
   const opsParam = searchParams.get("ops");
@@ -34,21 +34,12 @@ function GameInner() {
   const [previousScore, setPreviousScore] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(gameDuration);
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
-  const [user, setUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [gameKey, setGameKey] = useState(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    import("@/lib/supabaseClient").then(({ createClient }) => {
-      const supabase = createClient();
-      supabaseRef.current = supabase;
-      supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    });
-  }, []);
 
   // Auto-start on mount
   useEffect(() => {
@@ -97,21 +88,31 @@ function GameInner() {
     if (gameState !== "finished") return;
     setPreviousScore(score);
 
-    if (saved || saving || !user || !supabaseRef.current) return;
+    // Only authenticated users may save scores
+    if (saved || saving || !user) return;
 
     const saveScore = async () => {
       setSaving(true);
-      const supabase = supabaseRef.current!;
-      const username =
-        user.user_metadata?.display_name ||
-        user.user_metadata?.full_name ||
-        user.user_metadata?.user_name ||
-        user.email?.split("@")[0] ||
-        "Anonymous";
+      try {
+        const { createClient } = await import("@/lib/supabaseClient");
+        const supabase = createClient();
 
-      await supabase.from("leaderboard").insert({ user_id: user.id, username, score, duration: gameDuration });
-      setSaving(false);
-      setSaved(true);
+        // Re-verify the session before writing — prevents spoofed submits
+        const { data: { user: verifiedUser }, error: authError } = await supabase.auth.getUser();
+        if (authError || !verifiedUser) {
+          setSaving(false);
+          return;
+        }
+
+        const username = getDisplayName(verifiedUser);
+        await supabase
+          .from("leaderboard")
+          .insert({ user_id: verifiedUser.id, username, score, duration: gameDuration });
+
+        setSaved(true);
+      } finally {
+        setSaving(false);
+      }
     };
 
     saveScore();
@@ -291,7 +292,12 @@ function GameInner() {
             <div className="text-xs text-center -mt-2">
               {!user && (
                 <p className="text-white/30">
-                  <a href="/login" className="underline hover:text-white/55 transition-colors">Sign in</a> to save your score
+                  <button
+                    onClick={openLogin}
+                    className="underline hover:text-white/55 transition-colors"
+                  >
+                    Sign in
+                  </button>{" "}to save your score
                 </p>
               )}
               {user && saving && <p className="text-white/40">Saving score...</p>}
