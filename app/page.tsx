@@ -136,6 +136,7 @@ export default function HomePage() {
           transform: leaderboardOpen ? "translateX(0)" : "translateX(-30vw)",
           opacity: leaderboardOpen ? 1 : 0,
           filter: leaderboardOpen ? "blur(0px)" : "blur(4px)",
+          pointerEvents: leaderboardOpen ? "auto" : "none",
           transition: "margin-right 420ms cubic-bezier(0.4,0,0.2,1), transform 420ms cubic-bezier(0.4,0,0.2,1), opacity 380ms ease-out, filter 320ms ease-out",
         }}
       >
@@ -199,9 +200,9 @@ export default function HomePage() {
           </div>
 
           {/* Show Timer */}
-          <div>
+          <div className="md:text-right md:flex md:flex-col md:items-end">
             <p className="text-white/30 text-xs mb-2">Show Timer</p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap md:justify-end">
               <button onClick={() => setShowTimer(true)} className={`${btnBase} ${showTimer ? btnActive : btnInactive}`}>On</button>
               <button onClick={() => setShowTimer(false)} className={`${btnBase} ${!showTimer ? btnActive : btnInactive}`}>Off</button>
             </div>
@@ -210,7 +211,7 @@ export default function HomePage() {
           {/* Duration */}
           <div>
             <p className="text-white/30 text-xs mb-2">Duration</p>
-            <div className="flex gap-2 sm:gap-3 flex-wrap">
+            <div className="flex gap-2 sm:gap-3 flex-wrap md:flex-nowrap">
               {TIMER_OPTIONS.map((t) => (
                 <button
                   key={t}
@@ -224,9 +225,9 @@ export default function HomePage() {
           </div>
 
           {/* Show Score */}
-          <div>
+          <div className="md:text-right md:flex md:flex-col md:items-end">
             <p className="text-white/30 text-xs mb-2">Show Score</p>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap md:justify-end">
               <button onClick={() => setShowScore(true)} className={`${btnBase} ${showScore ? btnActive : btnInactive}`}>On</button>
               <button onClick={() => setShowScore(false)} className={`${btnBase} ${!showScore ? btnActive : btnInactive}`}>Off</button>
             </div>
@@ -276,6 +277,7 @@ export default function HomePage() {
           transform: profileOpen ? "translateX(0)" : "translateX(30vw)",
           opacity: profileOpen ? 1 : 0,
           filter: profileOpen ? "blur(0px)" : "blur(4px)",
+          pointerEvents: profileOpen ? "auto" : "none",
           transition: "margin-left 420ms cubic-bezier(0.4,0,0.2,1), transform 420ms cubic-bezier(0.4,0,0.2,1), opacity 380ms ease-out, filter 320ms ease-out",
         }}
       >
