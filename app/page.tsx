@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import GlassCard from "@/components/GlassCard";
 import ProfilePanel from "@/components/ProfilePanel";
+import LeaderboardPanel from "@/components/LeaderboardPanel";
+import LeaderboardModal from "@/components/LeaderboardModal";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import type { Operator } from "@/types";
 
@@ -31,6 +32,8 @@ export default function HomePage() {
   const [showScore, setShowScore] = useState(true);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
   const { openLogin } = useAuthModal();
 
   const toggleOp = (op: Operator) => {
@@ -48,7 +51,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center px-4 gap-4">
+    <div className="flex h-screen items-center justify-center px-4 gap-4 overflow-hidden">
 
       {/* About modal overlay */}
       {aboutOpen && (
@@ -110,6 +113,34 @@ export default function HomePage() {
           </GlassCard>
         </div>
       )}
+
+      {/* Full leaderboard modal overlay */}
+      {leaderboardModalOpen && (
+        <LeaderboardModal onClose={() => setLeaderboardModalOpen(false)} />
+      )}
+
+      {/* Leaderboard panel — slides in from left */}
+      <div
+        style={{
+          width: "18rem",
+          flexShrink: 0,
+          marginRight: leaderboardOpen ? "0" : "calc(-18rem - 1rem)",
+          transform: leaderboardOpen ? "translateX(0)" : "translateX(-30vw)",
+          opacity: leaderboardOpen ? 1 : 0,
+          filter: leaderboardOpen ? "blur(0px)" : "blur(4px)",
+          transition: [
+            "margin-right 420ms cubic-bezier(0.4,0,0.2,1)",
+            "transform 420ms cubic-bezier(0.4,0,0.2,1)",
+            "opacity 380ms ease-out",
+            "filter 320ms ease-out",
+          ].join(", "),
+        }}
+      >
+        <LeaderboardPanel
+          onClose={() => setLeaderboardOpen(false)}
+          onViewFull={() => setLeaderboardModalOpen(true)}
+        />
+      </div>
 
       {/* Main card */}
         <GlassCard
@@ -202,14 +233,16 @@ export default function HomePage() {
           >
             Start
           </button>
-          <Link
-            href="/leaderboard"
-            className="w-full py-3 rounded-xl border border-white/10 bg-white/5 text-white/50 text-sm font-medium text-center
-              hover:text-white/80 hover:bg-white/8 hover:border-white/15 hover:shadow-[0_0_16px_rgba(255,255,255,0.07)]
-              transition-all duration-150"
+          <button
+            onClick={() => setLeaderboardOpen((p) => !p)}
+            className={`w-full py-3 rounded-xl border text-sm font-medium text-center transition-all duration-150
+              ${leaderboardOpen
+                ? "border-white/20 bg-white/10 text-white/80 hover:bg-white/15 hover:shadow-[0_0_16px_rgba(255,255,255,0.1)]"
+                : "border-white/10 bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/8 hover:border-white/15 hover:shadow-[0_0_16px_rgba(255,255,255,0.07)]"
+              }`}
           >
             Leaderboard
-          </Link>
+          </button>
         </div>
       </GlassCard>
 

@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import GlassCard from "@/components/GlassCard";
+import { useEffect, useState, useCallback } from "react";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { getDisplayName } from "@/lib/auth";
 import { getTopScores, getUserPlacement } from "@/lib/leaderboardQuery";
@@ -11,8 +9,11 @@ import type { LeaderboardRow, UserPlacement } from "@/lib/leaderboardQuery";
 const DURATIONS = [30, 60, 120, 180] as const;
 type Duration = typeof DURATIONS[number];
 
-export default function LeaderboardPage() {
-  const router = useRouter();
+interface LeaderboardModalProps {
+  onClose: () => void;
+}
+
+export default function LeaderboardModal({ onClose }: LeaderboardModalProps) {
   const { user } = useAuthModal();
   const [selectedDuration, setSelectedDuration] = useState<Duration>(120);
   const [entries, setEntries] = useState<LeaderboardRow[]>([]);
@@ -48,16 +49,32 @@ export default function LeaderboardPage() {
   useEffect(() => { fetchScores(selectedDuration); }, [selectedDuration, fetchScores]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
-      <GlassCard className="w-full max-w-xl px-8 py-8 flex flex-col gap-5">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="relative w-[520px] max-w-[92vw] max-h-[82vh] flex flex-col rounded-2xl border border-white/10 bg-white/[0.06] shadow-2xl overflow-hidden"
+        style={{ backdropFilter: "blur(28px)" }}
+      >
         {/* Header */}
-        <div>
-          <p className="text-white/30 text-xs mb-0.5">Top 50</p>
-          <h1 className="text-white font-bold text-2xl">Leaderboard</h1>
+        <div className="flex items-center justify-between px-7 pt-6 pb-4 flex-shrink-0">
+          <div>
+            <p className="text-white/30 text-xs mb-0.5">Top 50</p>
+            <h2 className="text-white font-bold text-xl">Leaderboard</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/25 hover:text-white/60 transition-colors text-xl leading-none mt-1"
+            aria-label="Close"
+          >
+            ✕
+          </button>
         </div>
 
         {/* Duration tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 px-7 pb-4 flex-shrink-0">
           {DURATIONS.map((d) => (
             <button
               key={d}
@@ -74,16 +91,16 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Table header */}
-        <div className="grid grid-cols-[2rem_1fr_4rem] gap-2">
+        <div className="grid grid-cols-[2rem_1fr_4rem] gap-2 px-7 pb-2 flex-shrink-0">
           <span className="text-white/25 text-xs">#</span>
           <span className="text-white/25 text-xs">Player</span>
           <span className="text-white/25 text-xs text-right">Score</span>
         </div>
 
-        <div className="h-px bg-white/8" />
+        <div className="h-px bg-white/8 mx-7 mb-3 flex-shrink-0" />
 
         {/* Rows */}
-        <div className="flex flex-col gap-1 max-h-[55vh] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto px-7 pb-2 flex flex-col gap-1 min-h-0">
           {loading && <p className="text-white/25 text-xs text-center py-10">Loading…</p>}
           {!loading && error && <p className="text-red-400/60 text-xs text-center py-10">{error}</p>}
           {!loading && !error && entries.length === 0 && (
@@ -142,10 +159,10 @@ export default function LeaderboardPage() {
           )}
         </div>
 
-        {/* Footer buttons */}
-        <div className="flex items-center gap-3 justify-end pt-2 border-t border-white/8">
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-7 py-5 border-t border-white/8 flex-shrink-0">
           <button
-            onClick={() => router.back()}
+            onClick={onClose}
             className="px-4 py-2 rounded-xl border border-white/12 bg-white/6 text-white/60 text-sm font-medium hover:bg-white/10 hover:text-white/80 hover:border-white/20 hover:shadow-[0_0_12px_rgba(255,255,255,0.07)] transition-all duration-200"
           >
             Return
@@ -157,7 +174,7 @@ export default function LeaderboardPage() {
             Play Now
           </a>
         </div>
-      </GlassCard>
-    </main>
+      </div>
+    </div>
   );
 }
