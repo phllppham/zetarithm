@@ -30,6 +30,7 @@ export default function Navbar() {
   };
 
   const displayName =
+    user?.user_metadata?.display_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.user_name ||
     user?.email?.split("@")[0] ||

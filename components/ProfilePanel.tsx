@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import GlassCard from "@/components/GlassCard";
 
@@ -19,6 +19,11 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
   const [user, setUser] = useState<User | null>(null);
   const [bestScores, setBestScores] = useState<BestScores>({});
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(async ({ createClient }) => {
@@ -45,24 +50,120 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
   }, []);
 
   const displayName =
+    user?.user_metadata?.display_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.user_name ||
     user?.email?.split("@")[0] ||
-    null;
+    "";
+
+  const startEditing = () => {
+    setNameInput(displayName);
+    setSaveError(null);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setSaveError(null);
+  };
+
+  const saveName = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === displayName) { setEditing(false); return; }
+
+    setSaving(true);
+    setSaveError(null);
+
+    const { createClient } = await import("@/lib/supabaseClient");
+    const supabase = createClient();
+
+    const { error: metaError } = await supabase.auth.updateUser({
+      data: { display_name: trimmed },
+    });
+
+    if (metaError) {
+      setSaveError(metaError.message);
+      setSaving(false);
+      return;
+    }
+
+    // Also update existing leaderboard rows so history reflects the new name
+    await supabase
+      .from("leaderboard")
+      .update({ username: trimmed })
+      .eq("user_id", user!.id);
+
+    setUser((prev) =>
+      prev
+        ? { ...prev, user_metadata: { ...prev.user_metadata, display_name: trimmed } }
+        : prev
+    );
+
+    setSaving(false);
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") saveName();
+    if (e.key === "Escape") cancelEditing();
+  };
 
   return (
     <GlassCard className="w-72 px-6 py-7 flex flex-col gap-6 self-stretch">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-white/30 text-xs mb-0.5">Profile</p>
-          <p className="text-white font-semibold text-sm">
-            {loading ? "..." : displayName ?? "Guest"}
-          </p>
+        <div className="flex-1 min-w-0 pr-3">
+          <p className="text-white/30 text-xs mb-1">Profile</p>
+
+          {editing ? (
+            <div className="flex flex-col gap-1.5">
+              <input
+                ref={inputRef}
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                maxLength={32}
+                className="w-full bg-white/8 border border-white/15 rounded-lg px-2.5 py-1 text-white text-sm outline-none focus:border-white/30 transition-all"
+              />
+              {saveError && <p className="text-red-400/70 text-xs">{saveError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={saveName}
+                  disabled={saving}
+                  className="text-xs text-white/60 hover:text-white transition-colors disabled:opacity-40"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className="text-xs text-white/30 hover:text-white/60 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-white font-semibold text-sm truncate">
+                {loading ? "..." : displayName || "Guest"}
+              </p>
+              {user && !loading && (
+                <button
+                  onClick={startEditing}
+                  className="text-white/25 hover:text-white/60 transition-colors flex-shrink-0"
+                  aria-label="Edit name"
+                >
+                  <PencilIcon />
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
         <button
           onClick={onClose}
-          className="text-white/25 hover:text-white/60 transition-colors text-base leading-none mt-0.5"
+          className="text-white/25 hover:text-white/60 transition-colors text-base leading-none mt-0.5 flex-shrink-0"
           aria-label="Close"
         >
           ✕
@@ -108,5 +209,14 @@ export default function ProfilePanel({ onClose, onLogin }: ProfilePanelProps) {
         </div>
       )}
     </GlassCard>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
   );
 }

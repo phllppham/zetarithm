@@ -8,7 +8,8 @@ export default async function ProfilePage() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const displayName = user?.user_metadata?.full_name
+  const displayName = user?.user_metadata?.display_name
+    || user?.user_metadata?.full_name
     || user?.user_metadata?.user_name
     || user?.email?.split("@")[0]
     || null;
