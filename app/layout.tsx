@@ -8,7 +8,10 @@ export const metadata: Metadata = {
   title: "Zetarithm — Modern Zetamac Arithmetic Game",
   description: "Modern Zetamac Arithmetic Game",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
     apple: "/favicon.png",
   },
 };
