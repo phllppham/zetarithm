@@ -3,8 +3,8 @@ import type { DifficultyConfig, Operator, Question } from "@/types";
 export const DEFAULT_CONFIG: DifficultyConfig = {
   operators: ["+", "−", "×", "÷"],
   ranges: {
-    "+": { min: 1, max: 100 },
-    "−": { min: 1, max: 100 },
+    "+": { min: 2, max: 100 },
+    "−": { min: 2, max: 100 },
     "×": { min: 2, max: 12 },
     "÷": { min: 2, max: 12 },
   },
@@ -37,16 +37,17 @@ export function generateQuestion(config: DifficultyConfig = DEFAULT_CONFIG): Que
     }
 
     case "×": {
+      // First factor: 2–12, second factor: 2–100 (matches Zetamac defaults)
       const a = randInt(min, max);
-      const b = randInt(min, max);
+      const b = randInt(2, 100);
       return { question: `${a} × ${b}`, answer: a * b };
     }
 
     case "÷": {
-      // Build a clean division: pick the two factors first, then present a × b ÷ b
-      const a = randInt(min, max);
-      const b = randInt(min, max);
-      const dividend = a * b; // guaranteed whole-number quotient
+      // Division is multiplication in reverse: quotient from 2–12, divisor from 2–100
+      const a = randInt(min, max);   // quotient (2–12)
+      const b = randInt(2, 100);     // divisor  (2–100)
+      const dividend = a * b;        // guaranteed whole-number result
       return { question: `${dividend} ÷ ${b}`, answer: a };
     }
   }
