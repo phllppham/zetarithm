@@ -180,48 +180,56 @@ export default function HomePage() {
         </div>
 
         {/* Grid: 2 columns on md+, stacked on mobile */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-x-4 md:gap-x-8 gap-y-6 md:gap-y-0 mb-6 md:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-x-6 md:gap-x-8 gap-y-6 mb-6 md:mb-8 min-w-0">
 
-          {/* Row 1 labels */}
-          <p className="text-white/30 text-xs mb-2">Operations</p>
-          <p className="text-white/30 text-xs mb-2 md:text-right">Show Timer</p>
-
-          {/* Row 1 buttons */}
-          <div className="flex gap-2 sm:gap-3 mb-1 flex-wrap">
-            {ALL_OPERATORS.map(({ op, label }) => (
-              <button
-                key={op}
-                onClick={() => toggleOp(op)}
-                className={`${btnBase} ${enabledOps.has(op) ? btnActive : btnInactive}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 mb-1 md:mb-5 justify-start md:justify-end">
-            <button onClick={() => setShowTimer(true)} className={`${btnBase} ${showTimer ? btnActive : btnInactive}`}>On</button>
-            <button onClick={() => setShowTimer(false)} className={`${btnBase} ${!showTimer ? btnActive : btnInactive}`}>Off</button>
+          {/* Operations */}
+          <div>
+            <p className="text-white/30 text-xs mb-2">Operations</p>
+            <div className="flex gap-2 sm:gap-3 flex-wrap">
+              {ALL_OPERATORS.map(({ op, label }) => (
+                <button
+                  key={op}
+                  onClick={() => toggleOp(op)}
+                  className={`${btnBase} ${enabledOps.has(op) ? btnActive : btnInactive}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Row 2 labels */}
-          <p className="text-white/30 text-xs mb-2">Duration</p>
-          <p className="text-white/30 text-xs mb-2 md:text-right">Show Score</p>
-
-          {/* Row 2 buttons */}
-          <div className="flex gap-2 sm:gap-3 flex-wrap">
-            {TIMER_OPTIONS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedTime(t)}
-                className={`${btnBase} font-medium ${selectedTime === t ? btnActive : btnInactive}`}
-              >
-                {t}s
-              </button>
-            ))}
+          {/* Show Timer */}
+          <div>
+            <p className="text-white/30 text-xs mb-2">Show Timer</p>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={() => setShowTimer(true)} className={`${btnBase} ${showTimer ? btnActive : btnInactive}`}>On</button>
+              <button onClick={() => setShowTimer(false)} className={`${btnBase} ${!showTimer ? btnActive : btnInactive}`}>Off</button>
+            </div>
           </div>
-          <div className="flex gap-2 justify-start md:justify-end">
-            <button onClick={() => setShowScore(true)} className={`${btnBase} ${showScore ? btnActive : btnInactive}`}>On</button>
-            <button onClick={() => setShowScore(false)} className={`${btnBase} ${!showScore ? btnActive : btnInactive}`}>Off</button>
+
+          {/* Duration */}
+          <div>
+            <p className="text-white/30 text-xs mb-2">Duration</p>
+            <div className="flex gap-2 sm:gap-3 flex-wrap">
+              {TIMER_OPTIONS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setSelectedTime(t)}
+                  className={`${btnBase} font-medium ${selectedTime === t ? btnActive : btnInactive}`}
+                >
+                  {t}s
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Show Score */}
+          <div>
+            <p className="text-white/30 text-xs mb-2">Show Score</p>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={() => setShowScore(true)} className={`${btnBase} ${showScore ? btnActive : btnInactive}`}>On</button>
+              <button onClick={() => setShowScore(false)} className={`${btnBase} ${!showScore ? btnActive : btnInactive}`}>Off</button>
+            </div>
           </div>
 
         </div>
